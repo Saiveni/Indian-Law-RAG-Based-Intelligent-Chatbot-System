@@ -10,8 +10,6 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
-from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferWindowMemory
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 from dotenv import load_dotenv
@@ -244,13 +242,9 @@ def process_and_add_documents(uploaded_files, embeddings, db):
 # Reset conversation function
 def reset_conversation():
     st.session_state.messages = []
-    st.session_state.memory.clear()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-if "memory" not in st.session_state:
-    st.session_state.memory = ConversationBufferWindowMemory(k=2, memory_key="chat_history", return_messages=True)
 
 if "uploaded_file_summaries" not in st.session_state:
     st.session_state.uploaded_file_summaries = []
@@ -401,12 +395,54 @@ prompt_with_mode = prompt.partial(
     answer_length_instruction=answer_length_instruction
 )
 
-qa = ConversationalRetrievalChain.from_llm(
-    llm=llm,
-    memory=st.session_state.memory,
-    retriever=selected_retriever,
-    combine_docs_chain_kwargs={'prompt': prompt_with_mode}
-)
+
+def format_chat_history(messages, max_turns=4):
+    """Format recent chat history for prompt context."""
+    recent = messages[-(max_turns * 2):]
+    lines = []
+    for msg in recent:
+        role = msg.get("role", "user")
+        content = str(msg.get("content", "")).strip()
+        if content:
+            lines.append(f"{role.upper()}: {content}")
+    return "\n".join(lines) if lines else "No previous chat history."
+
+
+def build_context_from_docs(retriever, question):
+    """Retrieve relevant chunks and combine them into prompt context."""
+    try:
+        docs = retriever.invoke(question)
+    except Exception:
+        docs = retriever.get_relevant_documents(question)
+
+    if not docs:
+        return "No relevant document context found.", []
+
+    context_parts = []
+    for idx, doc in enumerate(docs[:6], start=1):
+        source = doc.metadata.get("source", "unknown")
+        content = str(doc.page_content or "").strip()
+        if not content:
+            continue
+        context_parts.append(f"[Source {idx}: {source}]\n{content}")
+
+    return "\n\n".join(context_parts) if context_parts else "No relevant document context found.", docs
+
+
+def generate_answer(question, retriever, prompt_template):
+    """Generate answer from retriever context + chat history using ChatGroq."""
+    context, _ = build_context_from_docs(retriever, question)
+    chat_history = format_chat_history(st.session_state.messages)
+    formatted_prompt = prompt_template.format(
+        context=context,
+        chat_history=chat_history,
+        question=question,
+    )
+    response = llm.invoke(formatted_prompt)
+    content = getattr(response, "content", "")
+    if isinstance(content, list):
+        content = "\n".join([str(item) for item in content])
+    return str(content).strip() if str(content).strip() else "I could not generate a response for this question."
 
 # Display previous messages
 for message in st.session_state.messages:
@@ -432,14 +468,14 @@ if input_prompt:
 
     with st.chat_message("assistant", avatar="⚖️"):
         with st.status("Thinking 💡...", expanded=True):
-            result = qa.invoke({"question": input_prompt})
+            answer_text = generate_answer(input_prompt, selected_retriever, prompt_with_mode)
             message_placeholder = st.empty()
             full_response = "\n\n\n"
 
             # Print the result dictionary to inspect its structure
             #st.write(result)
 
-            for chunk in result["answer"]:
+            for chunk in answer_text:
                 full_response += chunk
                 time.sleep(0.02)
                 message_placeholder.markdown(full_response + " ▌")
@@ -448,4 +484,4 @@ if input_prompt:
             #st.write(result["answer"])
 
         st.button('Reset All Chat 🗑️', on_click=reset_conversation)
-    st.session_state.messages.append({"role": "assistant", "content": result["answer"]})
+    st.session_state.messages.append({"role": "assistant", "content": answer_text})
