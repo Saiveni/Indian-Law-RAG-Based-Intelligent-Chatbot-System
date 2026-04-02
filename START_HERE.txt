@@ -1,0 +1,43 @@
+================================================================================
+                   LEGAL CHATBOT - QUICK START INSTRUCTIONS
+================================================================================
+
+⚠️  YOU NEED TO ADD YOUR API KEYS FIRST! ⚠️
+
+The error you're seeing happens because the .env file is empty.
+
+FOLLOW THESE 3 SIMPLE STEPS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Get Google API Key
+  → Visit: https://makersuite.google.com/app/apikey
+  → Click "Create API Key" 
+  → Copy the key
+
+Step 2: Get Groq API Key
+  → Visit: https://console.groq.com/keys
+  → Click "Create API Key"
+  → Copy the key
+
+Step 3: Edit the .env file
+  → Open: .env (in this folder)
+  → Paste your keys like this:
+
+GOOGLE_API_KEY=AIzaSyAbc123YourActualKeyHere
+GROQ_API_KEY=gsk_Abc123YourActualKeyHere
+
+  → Save the file
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+THEN RUN:
+  streamlit run app.py
+
+OR:
+  .venv\Scripts\streamlit run app.py
+
+================================================================================
+
+📖 For detailed instructions, see: API_KEYS_SETUP.md
+
+================================================================================
