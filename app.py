@@ -26,34 +26,499 @@ if google_api_key:
 
 # Streamlit UI setup
 st.set_page_config(page_title="LawGPT", layout="wide")
-col1, col2, col3 = st.columns([1, 4, 1])
-st.title("Llama Model Legal ChatBot")
+import os
+
+# Main hero section
+hero_col1 = st.container()
+
+with hero_col1:
+    st.markdown(
+        """
+        <div class="hero-content-wrapper">
+            <div class="hero-kicker">Indian law assistant</div>
+            <h1 class="hero-title">LawGPT Legal Assistant</h1>
+            <p class="hero-copy">
+                Ask focused questions about Indian law, legal rights, court procedure, contracts,
+                notices, or uploaded legal documents. Off-topic questions are intentionally declined.
+            </p>
+            <div class="hero-rule"></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 st.markdown("""
     <style>
-    div.stButton > button:first-child {
-        background-color: #ffd0d0;
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+
+    :root {
+        --law-ink: #1b2430;
+        --law-navy: #1a2f4f;
+        --law-gold: #8b7a4d;
+        --law-gold-soft: #b8aa7e;
+        --law-paper: #e6e0d2;
+        --law-panel: rgba(244, 240, 230, 0.9);
+        --law-border: #b9ad8e;
     }
-    div.stButton > button:active {
-        background-color: #ff6262;
+
+    .stApp {
+        background:
+            radial-gradient(circle at 8% 12%, rgba(139, 122, 77, 0.18), transparent 34%),
+            radial-gradient(circle at 92% 88%, rgba(26, 47, 79, 0.2), transparent 38%),
+            linear-gradient(145deg, #d8d1bf 0%, #cdc4af 46%, #c2b79b 100%);
+        color: var(--law-ink);
+        font-family: 'Source Sans 3', serif;
     }
-    div[data-testid="stStatusWidget"] div button {
-        display: none;
+
+    [data-testid="stToolbar"],
+    [data-testid="stAppToolbar"],
+    [data-testid="stHeaderActionElements"],
+    div[data-testid="stStatusWidget"] {
+        display: none !important;
     }
-    .reportview-container {
-        margin-top: -2em;
-    }
-    #MainMenu {visibility: hidden;}
-    .stDeployButton {display:none;}
-    footer {visibility: hidden;}
-    #stDecoration {display:none;}
+
+    #MainMenu,
+    .stDeployButton,
+    footer,
+    #stDecoration,
     button[title="View fullscreen"] {
         visibility: hidden;
     }
-    .upload-section {
-        background-color: #f0f2f6;
-        padding: 20px;
+
+    [data-testid="stHeader"] {
+        background: transparent;
+    }
+
+    .hero-content-wrapper {
+        padding: 1.35rem 1.5rem 1.35rem 0;
+        animation: fadeInUp 0.7s ease-out;
+    }
+
+    .hero-title {
+        margin: 0;
+        border-bottom: 2px solid rgba(139, 122, 77, 0.62);
+        padding-bottom: 0.35rem;
+        font-size: 2.4rem;
+        font-family: 'Cinzel', serif;
+        color: var(--law-navy);
+        letter-spacing: 0.02em;
+    }
+
+    .hero-shell::after {
+        content: "";
+        position: absolute;
+        right: -2rem;
+        top: -2rem;
+        width: 10rem;
+        height: 10rem;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(26, 47, 79, 0.12), rgba(26, 47, 79, 0));
+        pointer-events: none;
+    }
+
+    .hero-kicker {
+        display: inline-block;
+        margin-bottom: 0.45rem;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(26, 47, 79, 0.14);
+        color: var(--law-navy);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .hero-shell h1 {
+        margin: 0;
+        border-bottom: none;
+        padding-bottom: 0;
+        font-size: 2.4rem;
+    }
+
+    .hero-copy {
+        max-width: 56rem;
+        margin: 0.45rem 0 0;
+        color: #2a3747;
+        font-size: 1.02rem;
+        line-height: 1.65;
+    }
+
+    .hero-rule {
+        width: 7.5rem;
+        height: 4px;
+        margin-top: 1rem;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--law-gold), rgba(139, 122, 77, 0.2));
+    }
+
+    [data-testid="stAppViewContainer"] > .main {
+        background: transparent;
+    }
+
+    .block-container {
+        background: var(--law-panel);
+        border: 1px solid var(--law-border);
+        border-radius: 18px;
+        padding-top: 1.2rem;
+        padding-bottom: 1.5rem;
+        box-shadow: 0 14px 35px rgba(26, 47, 79, 0.1);
+    }
+
+    h1, h2, h3 {
+        font-family: 'Cinzel', serif;
+        color: var(--law-navy);
+        letter-spacing: 0.02em;
+    }
+
+    h1 {
+        border-bottom: 2px solid rgba(139, 122, 77, 0.62);
+        padding-bottom: 0.35rem;
+    }
+
+    [data-testid="stFileUploaderDropzone"] {
+        background: #e8e2d3;
+        border: 1px dashed var(--law-gold);
+        border-radius: 14px;
+    }
+
+    div.stButton > button:first-child {
+        background: linear-gradient(125deg, var(--law-navy), #29446e);
+        color: #f4f0e3;
+        border: 1px solid #2e4d7b;
         border-radius: 10px;
-        margin-bottom: 20px;
+        font-weight: 600;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    div.stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(26, 47, 79, 0.28);
+        border-color: #385a8d;
+    }
+
+    div.stButton > button:active {
+        transform: translateY(0);
+    }
+
+    [data-baseweb="select"] > div,
+    .stTextInput > div > div,
+    .stChatInput > div {
+        background: #f6f2e8;
+        border-radius: 10px;
+        border: 1px solid var(--law-border);
+    }
+
+    [data-testid="stChatMessage"] {
+        background: rgba(247, 243, 234, 0.9);
+        border: 1px solid rgba(185, 173, 142, 0.88);
+        border-radius: 12px;
+        padding: 0.35rem 0.55rem;
+    }
+
+    .section-shell {
+        padding: 1rem 1.1rem;
+        margin-top: 0.9rem;
+        border-radius: 18px;
+        background: rgba(242, 236, 223, 0.78);
+        border: 1px solid rgba(185, 173, 142, 0.75);
+        box-shadow: 0 10px 22px rgba(26, 47, 79, 0.08);
+    }
+
+    .section-label {
+        display: inline-flex;
+        margin-bottom: 0.65rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(139, 122, 77, 0.22);
+        color: #4a3f27;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .stMarkdown hr {
+        border-top: 1px solid rgba(139, 122, 77, 0.52);
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-18px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes pulseGold {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(139, 122, 77, 0.42);
+        }
+        50% {
+            box-shadow: 0 0 0 8px rgba(139, 122, 77, 0);
+        }
+    }
+
+    @keyframes shimmerLaw {
+        0% {
+            background-position: -1000px 0;
+        }
+        100% {
+            background-position: 1000px 0;
+        }
+    }
+
+    @keyframes fadeInRight {
+        from {
+            opacity: 0;
+            transform: translateX(24px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .hero-shell {
+        animation: fadeInUp 0.7s ease-out;
+    }
+
+    .hero-kicker {
+        animation: slideInLeft 0.6s ease-out 0.15s both;
+    }
+
+    .hero-shell h1 {
+        animation: slideInLeft 0.6s ease-out 0.25s both;
+    }
+
+    .hero-copy {
+        animation: slideInLeft 0.6s ease-out 0.35s both;
+    }
+
+    .hero-rule {
+        animation: slideInLeft 0.6s ease-out 0.45s both;
+    }
+
+    .section-shell {
+        animation: fadeInUp 0.5s ease-out;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .section-shell:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 32px rgba(26, 47, 79, 0.16) !important;
+    }
+
+    [data-testid="stChatMessage"] {
+        animation: fadeInUp 0.4s ease-out;
+        transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    div.stButton > button:first-child {
+        position: relative;
+        animation: fadeInUp 0.5s ease-out;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    div.stButton > button:first-child:active {
+        animation: pulseGold 0.6s ease-out;
+    }
+
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 35px,
+                rgba(139, 122, 77, 0.05) 35px,
+                rgba(139, 122, 77, 0.05) 70px
+            ),
+            repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 35px,
+                rgba(26, 47, 79, 0.03) 35px,
+                rgba(26, 47, 79, 0.03) 70px
+            );
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .legal-accent {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--law-gold);
+        margin-right: 0.4rem;
+        animation: pulseGold 2.5s infinite;
+    }
+
+    /* Hide/minimize loading and status containers */
+    [data-testid="stStatusContainer"],
+    .stStatus {
+        display: none !important;
+    }
+
+    @media (max-width: 768px) {
+        .hero-content-wrapper {
+            padding: 1rem 0;
+        }
+
+        .hero-title {
+            font-size: 1.8rem;
+        }
+
+        .hero-copy {
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+
+        .hero-kicker {
+            font-size: 0.7rem;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Cinzel', serif;
+        }
+
+        .block-container {
+            padding-top: 0.8rem;
+            padding-bottom: 1rem;
+            margin: 0.4rem 0;
+        }
+
+        .section-shell {
+            padding: 0.8rem 0.9rem;
+            margin-top: 0.6rem;
+        }
+
+        [data-baseweb="select"] > div,
+        .stTextInput > div > div,
+        .stChatInput > div {
+            font-size: 0.95rem;
+        }
+
+        .stButton {
+            width: 100%;
+        }
+
+        [data-testid="stChatMessage"] {
+            padding: 0.6rem 0.8rem;
+            border-radius: 10px;
+        }
+
+        .section-label {
+            font-size: 0.65rem;
+            padding: 0.25rem 0.6rem;
+        }
+
+        [data-testid="stFileUploaderDropzone"] {
+            border-radius: 10px;
+            padding: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .hero-shell {
+            padding: 0.8rem 1rem;
+            gap: 0.8rem;
+        }
+
+        .hero-shell h1 {
+            font-size: 1.5rem;
+        }
+
+        .hero-copy {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .hero-icon {
+            max-width: 100px;
+        }
+
+        .hero-icon svg {
+            width: 85px !important;
+            height: 100px !important;
+        }
+
+        .block-container {
+            padding: 0.6rem 0.8rem;
+        }
+
+        .section-shell {
+            padding: 0.6rem 0.7rem;
+            margin-top: 0.4rem;
+        }
+
+        [data-testid="stChatMessage"] {
+            padding: 0.5rem 0.6rem;
+            font-size: 0.9rem;
+        }
+
+        [data-baseweb="select"] > div,
+        .stChatInput > div {
+            font-size: 0.9rem;
+            padding: 0.6rem;
+        }
+
+        .section-label {
+            font-size: 0.6rem;
+            padding: 0.2rem 0.5rem;
+        }
+
+        div.stButton > button:first-child {
+            font-size: 0.9rem;
+            padding: 0.7rem 1rem;
+        }
+
+        h1 {
+            border-bottom: 1.5px solid rgba(139, 122, 77, 0.62);
+        }
+
+        .stMarkdown hr {
+            margin: 0.5rem 0;
+        }
+    }
+
+    @media (max-width: 360px) {
+        .hero-shell {
+            padding: 0.7rem 0.9rem;
+        }
+
+        .hero-shell h1 {
+            font-size: 1.3rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .hero-icon {
+            display: none;
+        }
+
+        .hero-copy {
+            font-size: 0.85rem;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -177,6 +642,55 @@ Document text:
 
     return build_text_summary(text)
 
+
+LEGAL_TERMS = [
+    "law", "legal", "court", "judge", "advocate", "lawyer", "attorney", "petition",
+    "case", "bail", "fir", "complaint", "summons", "notice", "agreement", "contract",
+    "deed", "property", "tenant", "landlord", "rent", "divorce", "custody", "maintenance",
+    "alimony", "ipc", "bns", "bharatiya nyaya sanhita", "crpc", "bnss", "evidence",
+    "witness", "appeal", "writ", "civil", "criminal", "plaint", "affidavit", "injunction",
+    "cheque", "cheque bounce", "section", "police", "arrest", "rights", "employment",
+    "termination", "labour", "salary", "consumer", "cyber", "fraud", "defamation",
+    "will", "inheritance", "succession", "partnership", "company", "tax"
+]
+
+
+LEGAL_PHRASES = [
+    "legal advice", "legal help", "law related", "court case", "file a case", "file complaint",
+    "legal notice", "bail application", "property dispute", "employment dispute", "divorce case",
+    "consumer complaint", "police complaint", "contract dispute", "criminal case", "civil case"
+]
+
+
+NON_LEGAL_RESPONSE = (
+    "I can only answer legal or law-related questions. Please ask about courts, contracts, cases, "
+    "rights, notices, property, family law, criminal law, or other legal matters."
+)
+
+
+def is_legal_related_question(question):
+    """Return True when the query is clearly about law or legal matters."""
+    normalized = re.sub(r"\s+", " ", question.lower()).strip()
+    if not normalized:
+        return False
+
+    if any(phrase in normalized for phrase in LEGAL_PHRASES):
+        return True
+
+    word_hits = sum(1 for term in LEGAL_TERMS if re.search(rf"\b{re.escape(term)}\b", normalized))
+    if word_hits >= 1:
+        return True
+
+    legal_action_patterns = [
+        r"\bmy\s+(?:rights?|property|case|complaint|agreement|contract)\b",
+        r"\b(?:file|draft|send|serve|respond to)\s+(?:a\s+)?(?:case|complaint|notice|petition|bail|appeal)\b",
+        r"\b(?:arrest|detain|summon|evict|eviction|terminate|termination|sue|lawsuit|inherit|inheritance)\b",
+    ]
+    if any(re.search(pattern, normalized) for pattern in legal_action_patterns):
+        return True
+
+    return False
+
 # Function to process uploaded documents and add to vector store
 def process_and_add_documents(uploaded_files, embeddings, db):
     """Process uploaded files and add to existing vector store"""
@@ -190,7 +704,7 @@ def process_and_add_documents(uploaded_files, embeddings, db):
         file_name = uploaded_file.name
         file_extension = os.path.splitext(file_name)[1].lower()
         
-        st.info(f"Processing: {file_name}")
+        # Process files (silent - no visible messages)
         
         # Extract text based on file type
         if file_extension == '.pdf':
@@ -227,8 +741,7 @@ def process_and_add_documents(uploaded_files, embeddings, db):
         )
         split_docs = text_splitter.split_documents(documents)
         
-        # Add to existing vector store
-        st.info(f"Adding {len(split_docs)} chunks to vector store...")
+        # Add to existing vector store (silent processing)
         db.add_documents(split_docs)
         
         # Save updated vector store
@@ -277,7 +790,8 @@ except Exception as e:
     st.stop()
 
 # ==================== FIRST HALF: FILE UPLOAD SECTION ====================
-st.markdown("---")
+st.markdown('<div class="section-shell">', unsafe_allow_html=True)
+st.markdown('<div class="section-label">Document intake</div>', unsafe_allow_html=True)
 st.header("📄 Upload Legal Documents")
 st.markdown("Upload PDF, JPG, JPEG, or PNG files (up to 200MB per file)")
 
@@ -330,7 +844,10 @@ if st.session_state.uploaded_file_summaries:
             st.markdown(item["summary"].replace("\n", "  \n"))
     st.markdown("---")
 
-st.markdown("---")
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="section-shell">', unsafe_allow_html=True)
+st.markdown('<div class="section-label">Legal Q&A</div>', unsafe_allow_html=True)
 st.header("💬 Ask Legal Questions")
 st.markdown("Chat with the legal assistant about your uploaded documents or existing legal knowledge")
 st.markdown("---")
@@ -352,6 +869,7 @@ response_language = language_options[selected_language]
 # Define the prompt template
 prompt_template = """
 <s>[INST]This is a chat template and As a legal chat bot , your primary objective is to provide accurate and concise information based on the user's questions. Do not generate your own questions and answers. You will adhere strictly to the instructions provided, offering relevant context from the knowledge base while avoiding unnecessary details. Your responses will be brief, to the point, and in compliance with the established format. If a question falls outside the given context, you will refrain from utilizing the chat history and instead rely on your own knowledge base to generate an appropriate response. You will prioritize the user's query and refrain from posing additional questions. The aim is to deliver professional, precise, and contextually relevant information pertaining to the Indian Penal Code and uploaded legal documents.
+CRITICAL DOMAIN RULE: If the question is not legal or law-related, reply only with a brief refusal and do not answer the non-legal topic.
 RESPONSE LANGUAGE: {response_language}
 IMPORTANT: Your final answer must be entirely in the RESPONSE LANGUAGE.
 MODE: {response_mode}
@@ -455,6 +973,15 @@ for message in st.session_state.messages:
 input_prompt = st.chat_input("Say something")
 
 if input_prompt:
+    # In DOCUMENT mode, allow any reasonable question about the document.
+    # In GENERAL mode, enforce strict legal-only filtering.
+    if selected_mode == "GENERAL" and not is_legal_related_question(input_prompt):
+        with st.chat_message("assistant", avatar="⚖️"):
+            st.write(NON_LEGAL_RESPONSE)
+        st.session_state.messages.append({"role": "user", "content": input_prompt})
+        st.session_state.messages.append({"role": "assistant", "content": NON_LEGAL_RESPONSE})
+        st.stop()
+
     if selected_mode == "DOCUMENT" and not st.session_state.uploaded_db:
         with st.chat_message("assistant", avatar="⚖️"):
             st.write("PLEASE UPLOAD THE DOCUMENT")
@@ -467,7 +994,7 @@ if input_prompt:
     st.session_state.messages.append({"role": "user", "content": input_prompt})
 
     with st.chat_message("assistant", avatar="⚖️"):
-        with st.status("Thinking 💡...", expanded=True):
+        with st.status("Generating response...", expanded=False):
             answer_text = generate_answer(input_prompt, selected_retriever, prompt_with_mode)
             message_placeholder = st.empty()
             full_response = "\n\n\n"
@@ -485,3 +1012,5 @@ if input_prompt:
 
         st.button('Reset All Chat 🗑️', on_click=reset_conversation)
     st.session_state.messages.append({"role": "assistant", "content": answer_text})
+
+st.markdown('</div>', unsafe_allow_html=True)

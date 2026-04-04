@@ -1,3 +1,6 @@
 *.env
 venv/
 attachments/
+__pycache__/
+*.pyc
+.venv/
