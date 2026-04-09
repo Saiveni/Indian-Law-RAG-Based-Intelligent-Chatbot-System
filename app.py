@@ -3,6 +3,7 @@ import os
 import time
 import tempfile
 import re
+from html import escape
 from PIL import Image
 import pytesseract
 import fitz  # PyMuPDF
@@ -523,6 +524,327 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Cormorant Garamond', serif;
+    }
+
+    .stApp {
+        position: relative;
+        background:
+            radial-gradient(circle at 18% 18%, rgba(255, 215, 140, 0.20), transparent 22%),
+            radial-gradient(circle at 82% 12%, rgba(22, 44, 77, 0.18), transparent 26%),
+            radial-gradient(circle at 80% 82%, rgba(139, 122, 77, 0.14), transparent 28%),
+            linear-gradient(145deg, #f3ebdc 0%, #e8ddc6 36%, #d9ccb2 72%, #cbb995 100%);
+        color: #1b2430;
+        overflow-x: hidden;
+    }
+
+    .stApp::after {
+        content: "⚖️";
+        position: fixed;
+        top: 6%;
+        right: 4%;
+        font-size: 6rem;
+        opacity: 0.08;
+        transform: rotate(-10deg);
+        animation: driftSeal 10s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    [data-testid="stAppViewContainer"] > .main {
+        position: relative;
+        z-index: 1;
+        background: transparent;
+    }
+
+    [data-testid="stSidebar"] {
+        background:
+            linear-gradient(180deg, rgba(16, 27, 46, 0.98), rgba(24, 38, 62, 0.95)),
+            radial-gradient(circle at top, rgba(191, 159, 86, 0.16), transparent 42%);
+        border-right: 1px solid rgba(191, 159, 86, 0.38);
+        box-shadow: 14px 0 28px rgba(18, 26, 39, 0.20);
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #f4eddc;
+    }
+
+    .history-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.9rem;
+        border-radius: 999px;
+        border: 1px solid rgba(191, 159, 86, 0.45);
+        background: linear-gradient(135deg, rgba(191, 159, 86, 0.22), rgba(255, 255, 255, 0.05));
+        letter-spacing: 0.22em;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+    }
+
+    .history-panel-title {
+        font-family: 'Cinzel', serif;
+        font-size: 1.1rem;
+        letter-spacing: 0.06em;
+        margin: 0.25rem 0 0.6rem;
+        color: #fff1d0;
+    }
+
+    .history-card {
+        padding: 0.7rem 0.8rem;
+        margin-bottom: 0.7rem;
+        border-radius: 14px;
+        border: 1px solid rgba(191, 159, 86, 0.34);
+        background: linear-gradient(180deg, rgba(255, 250, 240, 0.10), rgba(255, 255, 255, 0.04));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .history-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        color: rgba(244, 237, 220, 0.75);
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.45rem;
+    }
+
+    .history-question {
+        color: #fff7e6;
+        font-size: 0.98rem;
+        font-weight: 700;
+        line-height: 1.25;
+        margin-bottom: 0.35rem;
+    }
+
+    .history-answer {
+        color: rgba(244, 237, 220, 0.88);
+        font-size: 0.93rem;
+        line-height: 1.35;
+    }
+
+    .history-empty {
+        padding: 0.85rem;
+        border-radius: 12px;
+        border: 1px dashed rgba(191, 159, 86, 0.38);
+        color: rgba(244, 237, 220, 0.70);
+        background: rgba(255, 255, 255, 0.04);
+        font-size: 0.95rem;
+    }
+
+    h1, h2, h3, h4 {
+        font-family: 'Cinzel', serif;
+        letter-spacing: 0.03em;
+    }
+
+    .hero-content-wrapper {
+        position: relative;
+        padding: 1.35rem 1.5rem 1.35rem 0;
+        animation: fadeInUp 0.7s ease-out;
+    }
+
+    .hero-content-wrapper::before {
+        content: "LAW CHAMBER";
+        display: inline-flex;
+        margin-bottom: 0.7rem;
+        padding: 0.38rem 0.85rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(26, 47, 79, 0.14), rgba(191, 159, 86, 0.18));
+        border: 1px solid rgba(139, 122, 77, 0.42);
+        color: #1a2f4f;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        box-shadow: 0 10px 20px rgba(26, 47, 79, 0.08);
+    }
+
+    .hero-title {
+        margin: 0;
+        border-bottom: 2px solid rgba(139, 122, 77, 0.72);
+        padding-bottom: 0.45rem;
+        font-size: 2.75rem;
+        font-family: 'Cinzel', serif;
+        color: #142136;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    .hero-copy {
+        max-width: 62rem;
+        margin: 0.65rem 0 0;
+        color: #2a3747;
+        font-size: 1.08rem;
+        line-height: 1.7;
+    }
+
+    .hero-rule {
+        width: 10rem;
+        height: 4px;
+        margin-top: 1rem;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #142136, #8b7a4d, rgba(191, 159, 86, 0.18));
+        background-size: 200% 100%;
+        animation: ruleShimmer 6s linear infinite;
+    }
+
+    .block-container {
+        background: rgba(255, 250, 243, 0.78);
+        border: 1px solid rgba(139, 122, 77, 0.32);
+        border-radius: 22px;
+        padding-top: 1.2rem;
+        padding-bottom: 1.5rem;
+        box-shadow:
+            0 18px 46px rgba(18, 30, 48, 0.10),
+            inset 0 1px 0 rgba(255, 255, 255, 0.55);
+        backdrop-filter: blur(8px);
+    }
+
+    .section-shell {
+        position: relative;
+        overflow: hidden;
+        padding: 1rem 1.15rem;
+        margin-top: 0.9rem;
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(255, 251, 245, 0.92), rgba(245, 237, 222, 0.82));
+        border: 1px solid rgba(139, 122, 77, 0.28);
+        box-shadow: 0 14px 30px rgba(26, 47, 79, 0.10);
+    }
+
+    .section-shell::after {
+        content: "";
+        position: absolute;
+        inset: auto -20% -35% auto;
+        width: 12rem;
+        height: 12rem;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(191, 159, 86, 0.20), transparent 60%);
+        animation: driftOrb 12s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    .section-label {
+        display: inline-flex;
+        margin-bottom: 0.65rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(139, 122, 77, 0.22), rgba(26, 47, 79, 0.10));
+        color: #43381f;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    [data-testid="stFileUploaderDropzone"],
+    [data-baseweb="select"] > div,
+    .stTextInput > div > div,
+    .stChatInput > div {
+        background: rgba(255, 250, 242, 0.95);
+        border: 1px solid rgba(139, 122, 77, 0.36);
+        border-radius: 14px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    [data-testid="stFileUploaderDropzone"] {
+        border-style: dashed;
+        border-color: rgba(139, 122, 77, 0.55);
+    }
+
+    div.stButton > button:first-child {
+        background: linear-gradient(135deg, #162c4d, #2f507e, #8b7a4d);
+        background-size: 220% 220%;
+        color: #fff7e8;
+        border: 1px solid rgba(191, 159, 86, 0.55);
+        border-radius: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        box-shadow: 0 12px 24px rgba(18, 30, 48, 0.18);
+        transition: transform 0.22s ease, box-shadow 0.22s ease, background-position 0.6s ease;
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    div.stButton > button:first-child:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 30px rgba(18, 30, 48, 0.24);
+        background-position: 100% 0;
+    }
+
+    div.stButton > button:first-child:active {
+        animation: pulseGold 0.6s ease-out;
+        transform: translateY(0);
+    }
+
+    [data-testid="stChatMessage"] {
+        background: linear-gradient(180deg, rgba(255, 249, 239, 0.95), rgba(244, 237, 223, 0.92));
+        border: 1px solid rgba(139, 122, 77, 0.26);
+        border-radius: 16px;
+        padding: 0.55rem 0.7rem;
+        box-shadow: 0 8px 20px rgba(26, 47, 79, 0.08);
+        animation: fadeInUp 0.4s ease-out;
+    }
+
+    [data-testid="stChatMessage"] p {
+        color: #1b2430;
+    }
+
+    [data-testid="stChatMessage"]:nth-child(even) {
+        border-left: 4px solid rgba(26, 47, 79, 0.62);
+    }
+
+    [data-testid="stChatMessage"]:nth-child(odd) {
+        border-left: 4px solid rgba(139, 122, 77, 0.60);
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulseGold {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(139, 122, 77, 0.42); }
+        50% { box-shadow: 0 0 0 8px rgba(139, 122, 77, 0); }
+    }
+
+    @keyframes driftSeal {
+        0%, 100% { transform: translateY(0) rotate(-10deg); }
+        50% { transform: translateY(10px) rotate(-7deg); }
+    }
+
+    @keyframes driftOrb {
+        0%, 100% { transform: translate(0, 0); opacity: 0.55; }
+        50% { transform: translate(-14px, -8px); opacity: 0.82; }
+    }
+
+    @keyframes ruleShimmer {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
+    }
+
+    @media (max-width: 768px) {
+        .hero-title { font-size: 2.05rem; }
+        .hero-copy { font-size: 0.98rem; line-height: 1.55; }
+        .section-shell { padding: 0.85rem 0.95rem; }
+        .block-container { padding-top: 0.9rem; padding-bottom: 1rem; }
+        [data-testid="stChatMessage"] { padding: 0.45rem 0.55rem; }
+    }
+
+    @media (max-width: 480px) {
+        .hero-title { font-size: 1.65rem; }
+        .hero-content-wrapper::before { font-size: 0.66rem; letter-spacing: 0.14em; }
+        .history-card { padding: 0.6rem 0.65rem; }
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Check for required API keys and vector store
 if not groq_api_key:
     st.error("⚠️ GROQ API key is missing! Please add your GROQ_API_KEY to the .env file.")
@@ -566,6 +888,79 @@ def extract_text_from_pdf(pdf_file):
     except Exception as e:
         st.error(f"Error extracting text from PDF: {str(e)}")
         return ""
+
+
+def build_recent_chat_pairs(messages, limit=5):
+    """Build the most recent question-answer pairs from the current session."""
+    pairs = []
+    pending_question = None
+
+    for message in messages:
+        role = message.get("role")
+        content = str(message.get("content", "")).strip()
+
+        if not content:
+            continue
+
+        if role == "user":
+            pending_question = content
+        elif role == "assistant" and pending_question is not None:
+            pairs.append({
+                "question": pending_question,
+                "answer": content,
+                "turn_label": f"Turn {len(pairs) + 1}"
+            })
+            pending_question = None
+
+    return pairs[-limit:]
+
+
+def render_history_sidebar(messages):
+    """Render a compact history panel in the sidebar."""
+    recent_pairs = list(reversed(build_recent_chat_pairs(messages, limit=5)))
+
+    with st.sidebar:
+        st.markdown('<div class="history-badge">HISTORY</div>', unsafe_allow_html=True)
+        st.markdown('<div class="history-panel-title">Recent 5 chats</div>', unsafe_allow_html=True)
+
+        with st.expander("Open recent history", expanded=True):
+            if not recent_pairs:
+                st.markdown('<div class="history-empty">No previous chats yet.</div>', unsafe_allow_html=True)
+            else:
+                for index, item in enumerate(recent_pairs, start=1):
+                    question = escape(item["question"])
+                    answer = escape(item["answer"])
+                    question_preview = question if len(question) <= 140 else f"{question[:140].rstrip()}..."
+                    answer_preview = answer if len(answer) <= 220 else f"{answer[:220].rstrip()}..."
+
+                    st.markdown(
+                        f"""
+                        <div class="history-card">
+                            <div class="history-meta">
+                                <span>Chat {index}</span>
+                                <span>{item['turn_label']}</span>
+                            </div>
+                            <div class="history-question">Q: {question_preview}</div>
+                            <div class="history-answer">A: {answer_preview}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+
+@st.cache_resource(show_spinner=False)
+def load_embeddings():
+    return HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2",
+        model_kwargs={'device': 'cpu'},
+        encode_kwargs={'normalize_embeddings': True}
+    )
+
+
+@st.cache_resource(show_spinner=False)
+def load_vector_store():
+    embeddings = load_embeddings()
+    return FAISS.load_local("my_vector_store", embeddings, allow_dangerous_deserialization=True)
 
 
 def build_text_summary(text):
@@ -759,6 +1154,8 @@ def reset_conversation():
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+render_history_sidebar(st.session_state.messages)
+
 if "uploaded_file_summaries" not in st.session_state:
     st.session_state.uploaded_file_summaries = []
 
@@ -770,12 +1167,8 @@ if "uploaded_db" not in st.session_state:
 
 # Initialize embeddings and vector store with HuggingFace (free & unlimited!)
 try:
-    embeddings = HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2",
-        model_kwargs={'device': 'cpu'},
-        encode_kwargs={'normalize_embeddings': True}
-    )
-    db = FAISS.load_local("my_vector_store", embeddings, allow_dangerous_deserialization=True)
+    embeddings = load_embeddings()
+    db = load_vector_store()
     
     # Store embeddings and db in session state for reuse
     if 'embeddings' not in st.session_state:
@@ -994,21 +1387,10 @@ if input_prompt:
     st.session_state.messages.append({"role": "user", "content": input_prompt})
 
     with st.chat_message("assistant", avatar="⚖️"):
-        with st.status("Generating response...", expanded=False):
+        with st.spinner("Generating response..."):
             answer_text = generate_answer(input_prompt, selected_retriever, prompt_with_mode)
             message_placeholder = st.empty()
-            full_response = "\n\n\n"
-
-            # Print the result dictionary to inspect its structure
-            #st.write(result)
-
-            for chunk in answer_text:
-                full_response += chunk
-                time.sleep(0.02)
-                message_placeholder.markdown(full_response + " ▌")
-
-            # Print the answer
-            #st.write(result["answer"])
+            message_placeholder.markdown(answer_text)
 
         st.button('Reset All Chat 🗑️', on_click=reset_conversation)
     st.session_state.messages.append({"role": "assistant", "content": answer_text})
