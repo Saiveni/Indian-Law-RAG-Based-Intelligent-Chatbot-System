@@ -6,8 +6,6 @@ services:
     buildCommand: |
       pip install --upgrade pip
       pip install -r requirements.txt
-      apt-get update
-      apt-get install -y tesseract-ocr
     startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
     envVars:
       - key: GROQ_API_KEY
