@@ -11,3 +11,6 @@ pillow
 pytesseract
 pdf2image
 PyMuPDF
+fastapi
+uvicorn
+python-multipart

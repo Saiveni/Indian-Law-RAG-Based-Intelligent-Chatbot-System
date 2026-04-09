@@ -6,7 +6,6 @@ import re
 from html import escape
 from PIL import Image
 import pytesseract
-import fitz  # PyMuPDF
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
@@ -870,6 +869,12 @@ def extract_text_from_image(image_file):
 def extract_text_from_pdf(pdf_file):
     """Extract text from PDF using PyMuPDF"""
     try:
+        try:
+            import fitz  # PyMuPDF
+        except ImportError:
+            st.error("PyMuPDF is missing. Install it with: pip install PyMuPDF")
+            return ""
+
         # Save uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
             tmp_file.write(pdf_file.read())
@@ -913,6 +918,32 @@ def build_recent_chat_pairs(messages, limit=5):
             pending_question = None
 
     return pairs[-limit:]
+
+
+def normalize_llm_content(content):
+    """Convert LLM content payloads (string/list/dict blocks) into plain text."""
+    if content is None:
+        return ""
+
+    if isinstance(content, str):
+        return content.strip()
+
+    if isinstance(content, dict):
+        text_value = content.get("text") or content.get("content") or ""
+        return str(text_value).strip()
+
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                parts.append(str(item.get("text") or item.get("content") or ""))
+            else:
+                parts.append(str(item))
+        return "\n".join([part.strip() for part in parts if str(part).strip()]).strip()
+
+    return str(content).strip()
 
 
 def render_history_sidebar(messages):
@@ -1024,10 +1055,7 @@ Document text:
     try:
         summary_llm = ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.3-70b-versatile")
         response = summary_llm.invoke(prompt)
-        content = getattr(response, "content", "")
-        if isinstance(content, list):
-            content = "\n".join([str(item) for item in content])
-        content = str(content).strip()
+        content = normalize_llm_content(getattr(response, "content", ""))
 
         if content:
             return content
@@ -1153,8 +1181,6 @@ def reset_conversation():
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-render_history_sidebar(st.session_state.messages)
 
 if "uploaded_file_summaries" not in st.session_state:
     st.session_state.uploaded_file_summaries = []
@@ -1350,10 +1376,8 @@ def generate_answer(question, retriever, prompt_template):
         question=question,
     )
     response = llm.invoke(formatted_prompt)
-    content = getattr(response, "content", "")
-    if isinstance(content, list):
-        content = "\n".join([str(item) for item in content])
-    return str(content).strip() if str(content).strip() else "I could not generate a response for this question."
+    content = normalize_llm_content(getattr(response, "content", ""))
+    return content if content else "I could not generate a response for this question."
 
 # Display previous messages
 for message in st.session_state.messages:
@@ -1394,5 +1418,7 @@ if input_prompt:
 
         st.button('Reset All Chat 🗑️', on_click=reset_conversation)
     st.session_state.messages.append({"role": "assistant", "content": answer_text})
+
+render_history_sidebar(st.session_state.messages)
 
 st.markdown('</div>', unsafe_allow_html=True)

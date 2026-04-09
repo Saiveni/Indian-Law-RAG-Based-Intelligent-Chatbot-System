@@ -1,6 +1,10 @@
 [client]
 toolbarMode = "minimal"
 
+[server]
+fileWatcherType = "none"
+runOnSave = false
+
 [theme]
 base = "light"
 primaryColor = "#1a2f4f"
@@ -8,3 +12,8 @@ backgroundColor = "#d8d1bf"
 secondaryBackgroundColor = "#cbc1a9"
 textColor = "#1b2430"
 font = "serif"
+
+[theme.sidebar]
+backgroundColor = "#1f304c"
+secondaryBackgroundColor = "#253a5a"
+textColor = "#f4eddc"
