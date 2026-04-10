@@ -1301,7 +1301,8 @@ response_language = language_options[selected_language]
 # Define the prompt template
 prompt_template = """
 <s>[INST]This is a chat template and As a legal chat bot , your primary objective is to provide accurate and concise information based on the user's questions. Do not generate your own questions and answers. You will adhere strictly to the instructions provided, offering relevant context from the knowledge base while avoiding unnecessary details. Your responses will be brief, to the point, and in compliance with the established format. If a question falls outside the given context, you will refrain from utilizing the chat history and instead rely on your own knowledge base to generate an appropriate response. You will prioritize the user's query and refrain from posing additional questions. The aim is to deliver professional, precise, and contextually relevant information pertaining to the Indian Penal Code and uploaded legal documents.
-CRITICAL DOMAIN RULE: If the question is not legal or law-related, reply only with a brief refusal and do not answer the non-legal topic.
+CRITICAL DOMAIN RULE: Refuse only when the question is clearly non-legal.
+LEGAL SCOPE RULE: Questions about legal sections, statutes, Acts, constitutional articles, offences, penalties, and legal procedures are legal questions and must be answered.
 RESPONSE LANGUAGE: {response_language}
 IMPORTANT: Your final answer must be entirely in the RESPONSE LANGUAGE.
 MODE: {response_mode}
