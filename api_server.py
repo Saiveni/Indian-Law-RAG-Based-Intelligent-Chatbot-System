@@ -6,18 +6,22 @@ from html import escape
 from typing import List
 
 import fitz
-import pytesseract
 from PIL import Image
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_groq import ChatGroq
+
+try:
+    import pytesseract
+except Exception:
+    pytesseract = None
 
 load_dotenv()
 
@@ -71,11 +75,9 @@ class ChatResponse(BaseModel):
 
 
 @lru_cache(maxsize=1)
-def get_embeddings() -> HuggingFaceEmbeddings:
-    return HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2",
-        model_kwargs={"device": "cpu"},
-        encode_kwargs={"normalize_embeddings": True},
+def get_embeddings() -> FastEmbedEmbeddings:
+    return FastEmbedEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
     )
 
 
@@ -164,6 +166,9 @@ def build_context_from_docs(retriever, question: str) -> str:
 
 
 def extract_text_from_image(image_file: UploadFile) -> str:
+    if pytesseract is None:
+        # OCR support is optional in serverless/container deploys.
+        return ""
     image = Image.open(image_file.file)
     return pytesseract.image_to_string(image)
 
@@ -304,6 +309,11 @@ Document text:
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "lawgpt-api"}
 
 
 @app.post("/reset")
