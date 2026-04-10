@@ -7,4 +7,8 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  preview: {
+    host: true,
+    allowedHosts: true,
+  },
 });
