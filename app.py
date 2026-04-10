@@ -1074,14 +1074,24 @@ LEGAL_TERMS = [
     "witness", "appeal", "writ", "civil", "criminal", "plaint", "affidavit", "injunction",
     "cheque", "cheque bounce", "section", "police", "arrest", "rights", "employment",
     "termination", "labour", "salary", "consumer", "cyber", "fraud", "defamation",
-    "will", "inheritance", "succession", "partnership", "company", "tax"
+    "will", "inheritance", "succession", "partnership", "company", "tax",
+    "pocso", "ndps", "cpc", "constitution", "constitutional", "rti", "offence", "offense"
 ]
 
 
 LEGAL_PHRASES = [
     "legal advice", "legal help", "law related", "court case", "file a case", "file complaint",
     "legal notice", "bail application", "property dispute", "employment dispute", "divorce case",
-    "consumer complaint", "police complaint", "contract dispute", "criminal case", "civil case"
+    "consumer complaint", "police complaint", "contract dispute", "criminal case", "civil case",
+    "pocso act", "under section", "what is section", "article 21", "article 14"
+]
+
+
+LEGAL_REFERENCE_PATTERNS = [
+    r"\b(?:section|sec\.?|u/s|under section)\s*\d+[a-z]?\b",
+    r"\b(?:article|art\.?)\s*\d+[a-z]?\b",
+    r"\b(?:ipc|crpc|cpc|bns|bnss|pocso|ndps|rti)\b",
+    r"\b[a-z][a-z\s]{1,50}\s+act(?:\s*,?\s*\d{4})?\b",
 ]
 
 
@@ -1102,6 +1112,9 @@ def is_legal_related_question(question):
 
     word_hits = sum(1 for term in LEGAL_TERMS if re.search(rf"\b{re.escape(term)}\b", normalized))
     if word_hits >= 1:
+        return True
+
+    if any(re.search(pattern, normalized) for pattern in LEGAL_REFERENCE_PATTERNS):
         return True
 
     legal_action_patterns = [
