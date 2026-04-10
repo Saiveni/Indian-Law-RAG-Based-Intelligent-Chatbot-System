@@ -345,16 +345,16 @@ def chat(req: ChatRequest):
 
     if mode == "DOCUMENT" and uploaded_db is None:
         return ChatResponse(answer="PLEASE UPLOAD THE DOCUMENT")
+    try:
+        retriever = (uploaded_db if mode == "DOCUMENT" and uploaded_db is not None else get_main_db()).as_retriever(
+            search_type="similarity",
+            search_kwargs={"k": 4},
+        )
 
-    retriever = (uploaded_db if mode == "DOCUMENT" and uploaded_db is not None else get_main_db()).as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": 4},
-    )
+        context = build_context_from_docs(retriever, question)
+        chat_history = format_chat_history()
 
-    context = build_context_from_docs(retriever, question)
-    chat_history = format_chat_history()
-
-    prompt = f"""
+        prompt = f"""
 <s>[INST]This is a chat template and As a legal chat bot, your primary objective is to provide accurate and concise information.
 CRITICAL DOMAIN RULE: If the question is not legal or law-related, reply only with a brief refusal.
 RESPONSE LANGUAGE: {req.response_language}
@@ -367,8 +367,16 @@ ANSWER:
 </s>[INST]
 """
 
-    response = get_llm().invoke(prompt)
-    answer = normalize_llm_content(getattr(response, "content", ""))
+        response = get_llm().invoke(prompt)
+        answer = normalize_llm_content(getattr(response, "content", ""))
+    except Exception:
+        return ChatResponse(
+            answer=(
+                "Chat service is temporarily unavailable. "
+                "Please verify GROQ_API_KEY in Railway Variables and try again."
+            )
+        )
+
     if not answer:
         answer = "I could not generate a response for this question."
 
